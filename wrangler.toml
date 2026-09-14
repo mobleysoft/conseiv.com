@@ -1,7 +1,7 @@
 name = "conseiv-studio-canary"
 main = "worker/index.js"
 compatibility_date = "2026-08-27"
-workers_dev = false
+workers_dev = true
 preview_urls = false
 
 [assets]
@@ -13,8 +13,10 @@ run_worker_first = ["/api/*"]
 [[d1_databases]]
 binding = "DB"
 database_name = "conseiv-studio"
-# Local-only until a real, reviewed D1 database is provisioned for this app.
-database_id = "00000000-0000-0000-0000-000000000000"
+# Provisioned 2026-09-14 (depth audit) via `wrangler d1 create conseiv-studio`
+# in the real johnmobley99 Cloudflare account. Not yet in production traffic -
+# see workers_dev below, used only for staging live-verification.
+database_id = "d8e89723-2dd8-4233-9f72-1889cdb76466"
 migrations_dir = "migrations"
 
 [vars]
