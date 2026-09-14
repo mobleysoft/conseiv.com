@@ -20,7 +20,8 @@ replaced. The new build is isolated in `dist/`; it does not include the old site
   parameters and generated geometry so later algorithms do not rewrite history.
 - AuthFor register/login/verify adapter using the actual existing public API.
   No independent password database and no fabricated service binding.
-- Library list/open/save API and interface; deletion is currently API-only.
+- Library list/open/save/delete API and interface, with a confirm step before
+  a delete request is sent.
 
 See `shared/API_CONTRACT.md` for exact payloads, limits and authentication.
 

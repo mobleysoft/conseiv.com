@@ -97,6 +97,17 @@ export default function App() {
       setGeneration(result.generation); setParameters(result.generation.parameters); setName(result.asset.name); setLibrary(false); setMessage('Saved design restored.');
     } catch (e) { setError(e.message); } finally { setBusy(false); }
   }
+  async function deleteAsset(asset, event) {
+    event.stopPropagation();
+    if (!window.confirm(`Delete "${asset.name}"? This cannot be undone.`)) return;
+    setBusy(true); setError('');
+    try {
+      await api(`/api/conseiv/assets/${asset.id}`, { method: 'DELETE' });
+      setAssets(previous => previous.filter(a => a.id !== asset.id));
+      setMessage(`Deleted ${asset.name} from your library.`);
+    } catch (e) { setError(e.message); if (e.status === 401) { setUser(null); setAuth(true); } }
+    finally { setBusy(false); }
+  }
   function download() {
     const text = format === 'obj' ? exportOBJ(mesh) : exportSTL(mesh);
     const url = URL.createObjectURL(new Blob([text], { type: 'text/plain' }));
@@ -145,7 +156,7 @@ export default function App() {
         <div className="export-panel glass"><label className="sr-only" htmlFor="export-format">Export format</label><select id="export-format" value={format} onChange={e => setFormat(e.target.value)}><option value="stl">STL</option><option value="obj">OBJ</option></select><button onClick={download}>Export {view === 'flat' ? 'flat' : '3D'} model <span aria-hidden="true">↓</span></button></div>
       </section>
       <section className="save-row"><label>Design name<input aria-label="Design name" value={name} maxLength={100} onChange={e => setName(e.target.value)} /></label><button disabled={busy || dirty || !name.trim()} onClick={save}>Save to library <span aria-hidden="true">+</span></button><p>Parametric mesh preview. Confirm material, tooling, tolerances, and bend compensation before fabrication.</p></section>
-      {library && <section className="library glass" aria-label="Saved designs"><div className="panel-heading"><h2>Your designs</h2><button onClick={() => setLibrary(false)}>Close library</button></div>{!assets.length && <p>No saved designs yet. Save the current model to start your collection.</p>}<div className="library-grid">{assets.map(asset => <button disabled={busy} onClick={() => loadAsset(asset)} key={asset.id}><span className="library-shape" aria-hidden="true">⌑</span><strong>{asset.name}</strong><small>{new Date(asset.createdAt).toLocaleDateString()}</small><span>Open design ↗</span></button>)}</div>{more !== null && <button disabled={busy} onClick={() => openLibrary(more)}>Load more designs</button>}</section>}
+      {library && <section className="library glass" aria-label="Saved designs"><div className="panel-heading"><h2>Your designs</h2><button onClick={() => setLibrary(false)}>Close library</button></div>{!assets.length && <p>No saved designs yet. Save the current model to start your collection.</p>}<div className="library-grid">{assets.map(asset => <div className="library-card" key={asset.id}><button disabled={busy} onClick={() => loadAsset(asset)}><span className="library-shape" aria-hidden="true">⌑</span><strong>{asset.name}</strong><small>{new Date(asset.createdAt).toLocaleDateString()}</small><span>Open design ↗</span></button><button className="library-delete" disabled={busy} aria-label={`Delete ${asset.name}`} onClick={e => deleteAsset(asset, e)}>Delete</button></div>)}</div>{more !== null && <button disabled={busy} onClick={() => openLibrary(more)}>Load more designs</button>}</section>}
     </main>
     <footer><a href="https://mobleysoft.com">MOBLEYSOFT</a><span>TOOLS FOR MAKING WHAT COMES NEXT.</span><span>CONSEIV / PARAMETRIC STUDIO</span></footer>
     {auth && <AuthDialog onClose={() => setAuth(false)} onUser={nextUser => { setUser(nextUser); setAuth(false); setMessage(`Signed in as ${nextUser.name}. You can now save your design.`); }} />}
