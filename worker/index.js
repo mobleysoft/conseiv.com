@@ -2,6 +2,8 @@ import { generateBracket, exportOBJ, exportSTL, GENERATOR_VERSION, GeometryValid
 
 const COOKIE = '__Host-conseiv_session';
 const MAX_BODY = 16_384;
+const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000;
+const RATE_LIMIT_MAX_PER_KEY = 10;
 class HttpError extends Error {
   constructor(status, code, message) { super(message); this.status = status; this.code = code; }
 }
@@ -70,6 +72,16 @@ function userFields(value) {
   }
   return { id: value.id, email: value.email, name: value.name };
 }
+async function enforceRateLimit(db, keys) {
+  const cutoff = Date.now() - RATE_LIMIT_WINDOW_MS;
+  for (const key of keys) {
+    await db.prepare('DELETE FROM auth_attempts WHERE bucket_key=? AND attempted_at<?').bind(key, cutoff).run();
+    const row = await db.prepare('SELECT COUNT(*) AS count FROM auth_attempts WHERE bucket_key=?').bind(key).first();
+    if (row.count >= RATE_LIMIT_MAX_PER_KEY) fail(429, 'RATE_LIMITED', 'Too many attempts. Wait a few minutes and try again.');
+  }
+  const now = Date.now();
+  await db.batch(keys.map(key => db.prepare('INSERT INTO auth_attempts (bucket_key,attempted_at) VALUES (?,?)').bind(key, now)));
+}
 async function storeUser(db, user) {
   const now = new Date().toISOString();
   await db.prepare('INSERT INTO users (id,email,name,created_at,updated_at) VALUES (?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET email=excluded.email,name=excluded.name,updated_at=excluded.updated_at')
@@ -119,6 +131,8 @@ async function route(request, env) {
     const body = await bodyJson(request, ['email', 'password', 'name']);
     if (typeof body.email !== 'string' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(body.email) || body.email.length > 254 || typeof body.password !== 'string' || body.password.length < 8 || body.password.length > 256) fail(400, 'INVALID_CREDENTIALS', 'Enter an email and a password of 8 to 256 characters.');
     if (path.endsWith('register') && (typeof body.name !== 'string' || !body.name.trim() || body.name.length > 100)) fail(400, 'INVALID_NAME', 'A name of 1 to 100 characters is required.');
+    const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
+    await enforceRateLimit(db, [`ip:${ip}`, `email:${body.email.toLowerCase()}`]);
     const data = await authCall(env, path.replace('/api/auth/', '/api/v1/'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...body, client_id: 'conseiv', venture_id: 'conseiv.com' }) });
     if (data.mfa_required) fail(409, 'MFA_REQUIRED', 'Complete sign-in with AuthFor; this studio does not yet handle MFA challenges.');
     if (typeof data.token !== 'string' || !/^[A-Za-z0-9_.-]{10,8192}$/.test(data.token)) fail(502, 'AUTH_INVALID_RESPONSE', 'Authentication did not return a valid session.');

@@ -22,6 +22,9 @@ replaced. The new build is isolated in `dist/`; it does not include the old site
   No independent password database and no fabricated service binding.
 - Library list/open/save/delete API and interface, with a confirm step before
   a delete request is sent.
+- D1-backed rate limiting on `/api/auth/register` and `/api/auth/login`, keyed
+  by both requester IP and the submitted email (10 attempts per 15 minutes per
+  key), rejecting further attempts with 429 before calling AuthFor at all.
 
 See `shared/API_CONTRACT.md` for exact payloads, limits and authentication.
 
@@ -77,9 +80,10 @@ These tests do not constitute full test coverage or manufacturing certification.
    the current UI rejects an MFA challenge explicitly rather than bypassing it.
 4. Exercise save/reopen/delete and actual exported models with a CAD tool and
    an engineering reviewer. Validate material/tooling-specific bend allowances.
-5. Add abuse/rate controls, D1 backup/restore verification, monitoring, Safari
-   and physical mobile QA, and privacy/terms review. Confirm the desired launch
-   scope and preserve any legacy URLs before replacing the existing homepage.
+5. Rate limiting on register/login is real and live-verified (see above). Still
+   needed: D1 backup/restore verification, monitoring, Safari and physical
+   mobile QA, and privacy/terms review. Confirm the desired launch scope and
+   preserve any legacy URLs before replacing the existing homepage.
 6. If selling access, define pricing and integrate the existing VendyAI
    entitlement flow. This workbench does not currently take payments.
 

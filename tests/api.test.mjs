@@ -1,12 +1,12 @@
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
+import { readFile, readdir } from 'node:fs/promises';
 import { Miniflare, convertV4MiniflareOptions, Response as MFResponse } from 'miniflare';
 
 let mf, db;
 const origin = 'https://conseiv.test';
-const users = { alice: {id:'user-alice',name:'Alice',email:'alice@example.test'}, bob: {id:'user-bob',name:'Bob',email:'bob@example.test'} };
-const tokens = { alice: 'test-alice-token-00001', bob: 'test-bob-token-00002' };
+const users = { alice: {id:'user-alice',name:'Alice',email:'alice@example.test'}, bob: {id:'user-bob',name:'Bob',email:'bob@example.test'}, charlie: {id:'user-charlie',name:'Charlie',email:'charlie@example.test'} };
+const tokens = { alice: 'test-alice-token-00001', bob: 'test-bob-token-00002', charlie: 'test-charlie-token-00003' };
 const calls = [];
 async function auth(request) {
   const path = new URL(request.url).pathname;
@@ -30,8 +30,10 @@ const request = (path, { method='GET', body, token, cookie, headers={} }={}) => 
 before(async () => {
   mf = new Miniflare(convertV4MiniflareOptions({ modules:true, scriptPath:'.test-build/index.js', compatibilityDate:'2026-08-27', d1Databases:['DB'], bindings:{AUTHFOR_ORIGIN:'https://authfor.com'}, serviceBindings:{AUTHFOR:auth} }));
   db = await mf.getD1Database('DB');
-  const sql = await readFile('migrations/0001_initial.sql', 'utf8');
-  for (const statement of sql.split(';').filter(s=>s.trim())) await db.prepare(statement).run();
+  for (const file of (await readdir('migrations')).sort()) {
+    const sql = await readFile(`migrations/${file}`, 'utf8');
+    for (const statement of sql.split(';').filter(s=>s.trim())) await db.prepare(statement).run();
+  }
 });
 after(async () => { await mf?.dispose(); });
 
@@ -85,6 +87,20 @@ test('cookie session hashes, per-request provider verification, and logout revoc
   assert.equal((await request('/api/auth/me',{cookie,headers:{Authorization:'Basic junk'}})).status,401);
   assert.equal((await request('/api/auth/logout',{method:'POST',cookie})).status,200);
   assert.equal((await request('/api/auth/me',{cookie})).status,401);
+});
+test('login is rate limited per IP and per email after repeated attempts', async () => {
+  const ip = '203.0.113.9', email = users.charlie.email;
+  for (let i = 0; i < 10; i++) {
+    const r = await request('/api/auth/login', { method: 'POST', body: { email, password: 'not-a-real-password' }, headers: { 'CF-Connecting-IP': ip } });
+    assert.equal(r.status, 200, `attempt ${i} should succeed, got ${r.status}`);
+  }
+  const blocked = await request('/api/auth/login', { method: 'POST', body: { email, password: 'not-a-real-password' }, headers: { 'CF-Connecting-IP': ip } });
+  assert.equal(blocked.status, 429);
+  assert.equal((await blocked.json()).error.code, 'RATE_LIMITED');
+  const otherIpSameEmail = await request('/api/auth/login', { method: 'POST', body: { email, password: 'not-a-real-password' }, headers: { 'CF-Connecting-IP': '198.51.100.5' } });
+  assert.equal(otherIpSameEmail.status, 429, 'email bucket should still block even from a different IP');
+  const sameIpOtherEmail = await request('/api/auth/login', { method: 'POST', body: { email: users.bob.email, password: 'not-a-real-password' }, headers: { 'CF-Connecting-IP': ip } });
+  assert.equal(sameIpOtherEmail.status, 429, 'IP bucket should still block a different email from the same IP');
 });
 test('registration uses AuthFor, not an independent password database', async () => {
   const response = await request('/api/auth/register',{method:'POST',body:{...users.bob,id:undefined,password:'not-a-real-password'}});
