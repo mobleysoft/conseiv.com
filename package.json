@@ -12,6 +12,7 @@
     "test:browser": "playwright test",
     "check": "npm run test",
     "db:local": "wrangler d1 migrations apply DB --local",
+    "db:backup-verify": "scripts/db-backup-verify.sh",
     "package:worker": "wrangler deploy --dry-run"
   },
   "dependencies": {

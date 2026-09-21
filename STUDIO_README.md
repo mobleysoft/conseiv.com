@@ -80,10 +80,17 @@ These tests do not constitute full test coverage or manufacturing certification.
    the current UI rejects an MFA challenge explicitly rather than bypassing it.
 4. Exercise save/reopen/delete and actual exported models with a CAD tool and
    an engineering reviewer. Validate material/tooling-specific bend allowances.
-5. Rate limiting on register/login is real and live-verified (see above). Still
-   needed: D1 backup/restore verification, monitoring, Safari and physical
-   mobile QA, and privacy/terms review. Confirm the desired launch scope and
-   preserve any legacy URLs before replacing the existing homepage.
+5. Rate limiting on register/login is real and live-verified (see above). D1
+   backup/restore is also real and live-verified: `npm run db:backup-verify`
+   exports the actual remote `conseiv-studio` D1, restores that exact dump
+   into a fresh local D1, and fails loudly if per-table row counts don't
+   match the source exactly (verified 2026-09-20: users/sessions/assets/
+   auth_attempts all matched). It is not scheduled anywhere yet - run it by
+   hand before any production migration until a real backup cadence is
+   decided. Still needed: monitoring and a scheduled (not just on-demand)
+   backup, Safari and physical mobile QA, and privacy/terms review. Confirm
+   the desired launch scope and preserve any legacy URLs before replacing
+   the existing homepage.
 6. If selling access, define pricing and integrate the existing VendyAI
    entitlement flow. This workbench does not currently take payments.
 
