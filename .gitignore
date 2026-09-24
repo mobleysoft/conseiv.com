@@ -12,3 +12,6 @@ test-results/
 playwright-report/
 .test-build/
 backups/
+backup_verify_state.json
+.backup_verify_cron.lock
+logs/

@@ -13,6 +13,7 @@
     "check": "npm run test",
     "db:local": "wrangler d1 migrations apply DB --local",
     "db:backup-verify": "scripts/db-backup-verify.sh",
+    "db:backup-verify:scheduled": "scripts/run-backup-verify-scheduled.sh",
     "package:worker": "wrangler deploy --dry-run"
   },
   "dependencies": {

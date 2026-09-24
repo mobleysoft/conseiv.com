@@ -84,13 +84,20 @@ These tests do not constitute full test coverage or manufacturing certification.
    backup/restore is also real and live-verified: `npm run db:backup-verify`
    exports the actual remote `conseiv-studio` D1, restores that exact dump
    into a fresh local D1, and fails loudly if per-table row counts don't
-   match the source exactly (verified 2026-09-20: users/sessions/assets/
-   auth_attempts all matched). It is not scheduled anywhere yet - run it by
-   hand before any production migration until a real backup cadence is
-   decided. Still needed: monitoring and a scheduled (not just on-demand)
-   backup, Safari and physical mobile QA, and privacy/terms review. Confirm
-   the desired launch scope and preserve any legacy URLs before replacing
-   the existing homepage.
+   match the source exactly (verified 2026-09-20, and again 2026-09-24:
+   users/sessions/assets/auth_attempts all matched both times). It is now
+   also scheduled, not just on-demand: `scripts/run-backup-verify-scheduled.sh`
+   runs it daily via launchd (`com.mobcorp.conseiv-backup-verify.plist`,
+   default interval - an engineering default, not a formally decided
+   production cadence, trivial to change), logs each run under `logs/`,
+   keeps the 14 most recent dumps under `backups/`, and records real
+   pass/fail history in `backup_verify_state.json`. This is a real
+   dump-and-verify job, not alerting - a failed run currently surfaces only
+   in that state file and the launchd stderr log, not a push notification;
+   that's still a real gap if a genuine unattended monitoring guarantee is
+   wanted later. Still needed: Safari and physical mobile QA, and privacy/
+   terms review. Confirm the desired launch scope and preserve any legacy
+   URLs before replacing the existing homepage.
 6. If selling access, define pricing and integrate the existing VendyAI
    entitlement flow. This workbench does not currently take payments.
 
