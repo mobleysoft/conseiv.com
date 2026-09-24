@@ -42,25 +42,29 @@ npm run preview
 Visit `http://127.0.0.1:8796`. Local migrations do not touch Cloudflare D1.
 `npm run dev` runs the Vite frontend and proxies API calls to that Worker.
 
-Browser checks use an isolated Chromium process, not your signed-in browser:
+Browser checks run in both Chromium and real WebKit (Safari's actual engine,
+not a Chromium stand-in), each at desktop and mobile viewport sizes -
+isolated processes, not your signed-in browser:
 
 ```sh
-npx playwright install chromium
+npx playwright install chromium webkit
 npm run test:browser
 ```
 
 Alternatively set `PLAYWRIGHT_CHROMIUM_EXECUTABLE` to an existing compatible
 Chromium executable to avoid downloading another browser. Screenshots are in
-ignored `test-results/`. Tests cover desktop and mobile viewport layout, not a
-physical iPhone or Safari/WebKit engine.
+ignored `test-results/`. This is the real WebKit engine, still not a physical
+iPhone or the actual Safari.app - macOS/iOS-specific input quirks (e.g. native
+date pickers, gesture handling) aren't covered by it.
 
 ## Verification and boundaries
 
-25 automated geometry/API tests passed locally. They check manifold winding,
+26 automated geometry/API tests passed locally. They check manifold winding,
 Euler characteristic for actual holes, nondegenerate triangles, flat volume,
 determinism, invalid inputs, exports, real local D1 SQL, ownership isolation,
-session hashes and logout. Two real-browser tests passed using the real local
-mesh API, with no browser API response mocks.
+session hashes and logout. Four real-browser tests (desktop + mobile, each in
+Chromium and real WebKit) passed using the real local mesh API, with no
+browser API response mocks.
 
 AuthFor is a transport fixture in API tests. Production sign-in, registration,
 MFA, outage behavior and cross-device sessions are not certified by those tests.
@@ -95,9 +99,12 @@ These tests do not constitute full test coverage or manufacturing certification.
    dump-and-verify job, not alerting - a failed run currently surfaces only
    in that state file and the launchd stderr log, not a push notification;
    that's still a real gap if a genuine unattended monitoring guarantee is
-   wanted later. Still needed: Safari and physical mobile QA, and privacy/
-   terms review. Confirm the desired launch scope and preserve any legacy
-   URLs before replacing the existing homepage.
+   wanted later. Real WebKit-engine browser coverage is now also
+   live-verified (see Reproduce, above) - desktop and mobile viewport, both
+   Chromium and WebKit, 4/4 passing. Still needed: a physical iPhone/
+   Safari.app QA pass (WebKit-the-engine is not identical to Safari-the-app)
+   and a privacy/terms review. Confirm the desired launch scope and preserve
+   any legacy URLs before replacing the existing homepage.
 6. If selling access, define pricing and integrate the existing VendyAI
    entitlement flow. This workbench does not currently take payments.
 
