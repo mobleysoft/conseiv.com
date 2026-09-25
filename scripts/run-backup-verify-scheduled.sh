@@ -39,6 +39,7 @@ if bash scripts/db-backup-verify.sh >"$LOGFILE" 2>&1; then
 else
   RESULT="fail"
   echo "[conseiv-backup-verify] $TS FAIL - see $LOGFILE" >&2
+  bash scripts/backup-verify-alert.sh "D1 backup/restore verification failed at $TS - see $LOGFILE" || true
 fi
 
 # Retain only the 14 most recent backup dumps (backups/ is gitignored,

@@ -95,11 +95,15 @@ These tests do not constitute full test coverage or manufacturing certification.
    default interval - an engineering default, not a formally decided
    production cadence, trivial to change), logs each run under `logs/`,
    keeps the 14 most recent dumps under `backups/`, and records real
-   pass/fail history in `backup_verify_state.json`. This is a real
-   dump-and-verify job, not alerting - a failed run currently surfaces only
-   in that state file and the launchd stderr log, not a push notification;
-   that's still a real gap if a genuine unattended monitoring guarantee is
-   wanted later. Real WebKit-engine browser coverage is now also
+   pass/fail history in `backup_verify_state.json`. A failed run now also
+   alerts: `scripts/backup-verify-alert.sh` appends a durable line to
+   `logs/backup_verify_failures.log` (works whether or not anyone is
+   logged into the Mac's GUI at the time) and fires a best-effort native
+   macOS notification via `osascript` (no third-party service, no cost, no
+   new credential; silently does nothing if the Mac isn't in an
+   interactive GUI session, since this runs via a LaunchAgent that may
+   fire before login - that's an honest limitation, not push-notification-
+   grade delivery). Real WebKit-engine browser coverage is now also
    live-verified (see Reproduce, above) - desktop and mobile viewport, both
    Chromium and WebKit, 4/4 passing. Still needed: a physical iPhone/
    Safari.app QA pass (WebKit-the-engine is not identical to Safari-the-app)
