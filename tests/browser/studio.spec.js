@@ -11,11 +11,13 @@ for (const [device, width, height] of [['desktop',1440,1100],['mobile',390,844]]
     expect(await page.evaluate(()=>document.documentElement.scrollWidth <= innerWidth)).toBeTruthy();
     await page.getByLabel('Leg A',{exact:true}).fill('100');
     await expect(page.getByText('Unapplied changes')).toBeVisible();
+    await expect(page.getByRole('button', {name:'Export 3D model'})).toBeDisabled();
     const response = page.waitForResponse(r=>r.url().includes('/api/conseiv/cad-mesh-generation') && r.request().method()==='POST');
     await page.getByRole('button',{name:'Generate geometry'}).click();
     const generated=await response; expect(generated.status()).toBe(200);
     expect((await generated.json()).parameters.legAWidth).toBe(100);
     await expect(page.getByRole('status')).toContainText('Geometry generated');
+    await expect(page.getByRole('button', {name:'Export 3D model'})).toBeEnabled();
     await page.getByRole('button',{name:'Flat pattern',exact:true}).click();
     await expect(page.getByRole('button',{name:'Flat pattern',exact:true})).toHaveAttribute('aria-pressed','true');
     await page.getByRole('button',{name:'Wireframe',exact:true}).click();
@@ -33,9 +35,11 @@ for (const [device, width, height] of [['desktop',1440,1100],['mobile',390,844]]
     await page.getByLabel('Hole margin',{exact:true}).fill('1');
     await page.getByRole('button',{name:'Generate geometry'}).click();
     await expect(page.getByRole('alert')).toContainText('clear');
+    await expect(page.getByRole('button', {name:'Export flat model'})).toBeDisabled();
     await page.getByLabel('Hole margin',{exact:true}).fill('12');
     await page.getByRole('button',{name:'Generate geometry'}).click();
     await expect(page.getByRole('alert')).toHaveCount(0);
+    await expect(page.getByRole('button', {name:'Export flat model'})).toBeEnabled();
     await page.getByRole('button',{name:'Formed',exact:true}).click();
     await page.evaluate(()=>scrollTo(0,0));
     await page.screenshot({path:`test-results/conseiv-${device}.png`,fullPage:true});
