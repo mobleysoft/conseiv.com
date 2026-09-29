@@ -231,3 +231,33 @@ export function exportSTL(mesh) {
   lines.push('endsolid conseiv_bracket_mm');
   return `${lines.join('\n')}\n`;
 }
+
+export function exportDXF(generation) {
+  const meta = generation.metadata;
+  const lines = [
+    '0', 'SECTION', '2', 'ENTITIES',
+    '0', 'LWPOLYLINE', '8', '0', '90', '4', '70', '1',
+    '10', '0.0', '20', '0.0',
+    '10', numberText(meta.outline.width), '20', '0.0',
+    '10', numberText(meta.outline.width), '20', numberText(meta.outline.height),
+    '10', '0.0', '20', numberText(meta.outline.height),
+  ];
+  for (const h of meta.holes) {
+    lines.push(
+      '0', 'CIRCLE', '8', '0',
+      '10', numberText(h.x), '20', numberText(h.y), '40', numberText(h.d / 2)
+    );
+  }
+  const bY1 = '0.0';
+  const bY2 = numberText(meta.outline.height);
+  lines.push(
+    '0', 'LINE', '8', 'BEND',
+    '10', numberText(meta.legAFlat), '20', bY1, '11', numberText(meta.legAFlat), '21', bY2,
+    '0', 'LINE', '8', 'BEND',
+    '10', numberText(meta.legAFlat + meta.bendAllowance), '20', bY1, '11', numberText(meta.legAFlat + meta.bendAllowance), '21', bY2,
+    '0', 'LINE', '8', 'BEND_CENTER',
+    '10', numberText(meta.bendLineX), '20', bY1, '11', numberText(meta.bendLineX), '21', bY2,
+    '0', 'ENDSEC', '0', 'EOF'
+  );
+  return `${lines.join('\n')}\n`;
+}

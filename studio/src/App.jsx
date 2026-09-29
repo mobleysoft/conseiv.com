@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import ModelViewer from './ModelViewer.jsx';
-import { DEFAULT_PARAMETERS, PARAMETER_LIMITS, generateBracket, exportOBJ, exportSTL } from '../../shared/geometry.js';
+import { DEFAULT_PARAMETERS, PARAMETER_LIMITS, generateBracket, exportOBJ, exportSTL, exportDXF } from '../../shared/geometry.js';
 
 async function api(path, options = {}) {
   const response = await fetch(path, { credentials: 'same-origin', ...options, headers: { 'Content-Type': 'application/json', ...options.headers } });
