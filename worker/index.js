@@ -1,4 +1,5 @@
 import { generateBracket, exportOBJ, exportSTL, GENERATOR_VERSION, GeometryValidationError } from '../shared/geometry.js';
+import { generateBrandAsset, DesignerValidationError } from '../shared/designer.js';
 
 const COOKIE = '__Host-conseiv_session';
 const MAX_BODY = 16_384;
@@ -189,6 +190,11 @@ async function route(request, env) {
     }
     return json({ ok: true, asset: assetFields(row), generation });
   }
+  if (path === '/api/designer/generate-svg' && method === 'POST') {
+    const body = await bodyJson(request, ['name', 'primaryColor', 'secondaryColor', 'style']);
+    const design = generateBrandAsset(body);
+    return json({ ok: true, ...design });
+  }
   if (path.startsWith('/api/')) fail(404, 'NOT_FOUND', 'Endpoint not found.');
   return env.ASSETS ? env.ASSETS.fetch(request) : new Response('Build the studio assets first.', { status: 503 });
 }
@@ -198,6 +204,7 @@ export default {
     try { return await route(request, env); }
     catch (error) {
       if (error instanceof GeometryValidationError) return json({ ok: false, error: { code: 'INVALID_GEOMETRY', message: error.message, fields: error.fields } }, 422);
+      if (error instanceof DesignerValidationError) return json({ ok: false, error: { code: 'INVALID_DESIGN_PARAMETERS', message: error.message, fields: error.fields } }, 422);
       if (error instanceof HttpError) return json({ ok: false, error: { code: error.code, message: error.message } }, error.status);
       console.error('Conseiv request failed', error?.name);
       return json({ ok: false, error: { code: 'SERVICE_UNAVAILABLE', message: 'The service is temporarily unavailable.' } }, 503);

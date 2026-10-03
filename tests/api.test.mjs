@@ -51,6 +51,19 @@ test('body limits, shape validation, and no misleading API SPA fallback', async 
   assert.equal((await request('/api/conseiv/cad-mesh-generation', {method:'POST',body:'{}',headers:{'Content-Type':'text/plain'}})).status, 415);
   assert.equal((await request('/api/missing')).status, 404);
 });
+test('designer endpoint generates a real, valid SVG without auth and validates input', async () => {
+  const r = await request('/api/designer/generate-svg', {method:'POST', body:{name:'Acme Robotics', style:'rounded'}});
+  assert.equal(r.status, 200); assert.equal(r.headers.get('Cache-Control'), 'no-store');
+  const data = await r.json();
+  assert.ok(data.ok);
+  assert.match(data.svg, /^<svg[^>]*>/); assert.match(data.svg, /<\/svg>$/);
+  assert.match(data.svg, />Acme Robotics<\/text>/);
+  assert.equal(data.parameters.style, 'rounded');
+  const bad = await request('/api/designer/generate-svg', {method:'POST', body:{name:'', style:'bubbly'}});
+  assert.equal(bad.status, 422);
+  const badData = await bad.json();
+  assert.equal(badData.error.code, 'INVALID_DESIGN_PARAMETERS');
+});
 test('save and reads fail closed without authentication or with cross-origin mutation', async () => {
   assert.equal((await request('/api/conseiv/assets', {method:'POST',body:{parameters:{}}})).status, 401);
   assert.equal((await request('/api/conseiv/assets')).status, 401);
